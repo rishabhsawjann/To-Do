@@ -18,10 +18,11 @@ interface TodoListProps {
 export function TodoList({ filter, onFilterChange }: TodoListProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { getFilteredTodos, addTodo, updateTodo, deleteTodo, toggleTodoComplete } = useTodosStore();
   const { currentUserId } = useSessionStore();
 
-  const todos = getFilteredTodos(currentUserId);
+  const todos = getFilteredTodos(currentUserId, filter);
   const allTodos = useTodosStore.getState().getTodosByUser(currentUserId);
   const upcomingTodos = allTodos.filter(todo => !todo.completed);
   const completedTodos = allTodos.filter(todo => todo.completed);
@@ -80,38 +81,54 @@ export function TodoList({ filter, onFilterChange }: TodoListProps) {
         <div className="flex items-center space-x-3">
           {/* Filter Dropdown */}
           <div className="relative">
-            <Button variant="outline" size="sm" className="flex items-center space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center space-x-2"
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+            >
               <Filter size={16} />
               <span>Filter</span>
             </Button>
-            <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-              <div className="py-1">
-                <button
-                  onClick={() => onFilterChange('all')}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                    filter === 'all' ? 'bg-gray-100 font-medium' : ''
-                  }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => onFilterChange('upcoming')}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                    filter === 'upcoming' ? 'bg-gray-100 font-medium' : ''
-                  }`}
-                >
-                  Upcoming
-                </button>
-                <button
-                  onClick={() => onFilterChange('completed')}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                    filter === 'completed' ? 'bg-gray-100 font-medium' : ''
-                  }`}
-                >
-                  Completed
-                </button>
+            {isFilterOpen && (
+              <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      onFilterChange('all');
+                      setIsFilterOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                      filter === 'all' ? 'bg-gray-100 font-medium' : ''
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => {
+                      onFilterChange('upcoming');
+                      setIsFilterOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                      filter === 'upcoming' ? 'bg-gray-100 font-medium' : ''
+                    }`}
+                  >
+                    Upcoming
+                  </button>
+                  <button
+                    onClick={() => {
+                      onFilterChange('completed');
+                      setIsFilterOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                      filter === 'completed' ? 'bg-gray-100 font-medium' : ''
+                    }`}
+                  >
+                    Completed
+                    </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <Button onClick={() => setIsFormOpen(true)} className="bg-green-600 hover:bg-green-700">
