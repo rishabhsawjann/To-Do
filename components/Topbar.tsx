@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Bell, User, LogOut, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/stores/users';
-import { useSessionStore } from '@/stores/session';
+import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils';
@@ -16,12 +17,21 @@ interface TopbarProps {
 
 export function Topbar({ onNotificationClick, notificationCount }: TopbarProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const router = useRouter();
   const { getUserById } = useUsersStore();
-  const { currentUserId } = useSessionStore();
+  const { user, signOut } = useAuthStore();
   const { getProfile } = useProfileStore();
   
-  const currentUser = getUserById(currentUserId);
+  const currentUser = user;
   const profile = getProfile();
+
+  const displayName = currentUser?.displayName || profile.name || '';
+  const displayAvatar = profile.avatar || currentUser?.photoURL || undefined;
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/login');
+  };
 
   return (
     <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
@@ -50,12 +60,12 @@ export function Topbar({ onNotificationClick, notificationCount }: TopbarProps) 
             className="flex items-center space-x-2 p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
           >
             <Avatar className="h-8 w-8">
-              <AvatarImage src={profile.avatar || currentUser?.avatar} />
+              <AvatarImage src={displayAvatar} />
               <AvatarFallback className="text-sm">
-                {getInitials(profile.name || currentUser?.name || '')}
+                {getInitials(displayName)}
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm font-medium">{profile.name || currentUser?.name}</span>
+            <span className="text-sm font-medium">{displayName}</span>
             <ChevronDown size={16} className={cn(
               "transition-transform",
               isProfileOpen && "rotate-180"
@@ -80,8 +90,7 @@ export function Topbar({ onNotificationClick, notificationCount }: TopbarProps) 
                 <button
                   onClick={() => {
                     setIsProfileOpen(false);
-                    // Handle logout
-                    console.log('Logout clicked');
+                    handleLogout();
                   }}
                   className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                 >

@@ -8,7 +8,7 @@ interface ProfileState extends Profile {
 }
 
 const defaultProfile: Profile = {
-  name: 'Fawaz Ahamed',
+  name: '',
   avatar: ''
 };
 

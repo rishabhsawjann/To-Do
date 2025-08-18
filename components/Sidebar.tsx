@@ -7,17 +7,14 @@ import {
   LayoutDashboard, 
   Calendar, 
   CheckSquare, 
-  Users, 
   User, 
   ChevronLeft, 
   ChevronRight,
   Search
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useUsersStore } from '@/stores/users';
-import { useSessionStore } from '@/stores/session';
+import { useAuthStore } from '@/stores/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getInitials } from '@/lib/utils';
 
 interface SidebarProps {
@@ -27,9 +24,7 @@ interface SidebarProps {
 
 export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
-  const { users, getUserById } = useUsersStore();
-  const { currentUserId, setCurrentUser } = useSessionStore();
-  const currentUser = getUserById(currentUserId);
+  const { user } = useAuthStore();
 
   const navigationItems = [
     {
@@ -55,18 +50,11 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
       href: '/profile',
       icon: User,
       roles: ['normal', 'superuser']
-    },
-    {
-      title: 'User Management',
-      href: '/admin/users',
-      icon: Users,
-      roles: ['superuser']
     }
   ];
 
-  const filteredNavigation = navigationItems.filter(item => 
-    currentUser?.role === 'superuser' || item.roles.includes('normal')
-  );
+  // For now, show all navigation items since we're not using roles from the old system
+  const filteredNavigation = navigationItems;
 
   return (
     <div className={cn(
@@ -121,60 +109,33 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         </div>
       </div>
 
-      {/* User Switcher */}
+      {/* Current User Display */}
       <div className={cn(
         "border-b border-gray-700 transition-all duration-300",
         isCollapsed ? "p-2" : "p-4"
       )}>
-        <Select value={currentUserId} onValueChange={setCurrentUser}>
-          <SelectTrigger className={cn(
-            "bg-gray-700 border-gray-600 text-white transition-all duration-300",
-            isCollapsed ? "w-10 h-10 p-0" : "w-full"
+        <div className={cn(
+          "flex items-center transition-all duration-300",
+          isCollapsed ? "justify-center" : "space-x-2"
+        )}>
+          <Avatar className={cn(
+            "transition-all duration-300",
+            isCollapsed ? "h-6 w-6" : "h-6 w-6"
           )}>
-            <div className={cn(
-              "flex items-center transition-all duration-300",
-              isCollapsed ? "justify-center" : "space-x-2"
+            <AvatarImage src={user?.photoURL || ''} />
+            <AvatarFallback className={cn(
+              "transition-all duration-300 bg-white text-gray-800",
+              isCollapsed ? "text-sm font-medium" : "text-xs"
             )}>
-              <Avatar className={cn(
-                "transition-all duration-300",
-                isCollapsed ? "h-6 w-6" : "h-6 w-6"
-              )}>
-                <AvatarImage src={currentUser?.avatar} />
-                <AvatarFallback className={cn(
-                  "transition-all duration-300 bg-white text-gray-800",
-                  isCollapsed ? "text-sm font-medium" : "text-xs"
-                )}>
-                  {getInitials(currentUser?.name || '')}
-                </AvatarFallback>
-              </Avatar>
-              {!isCollapsed && (
-                <SelectValue>
-                  <span className="truncate">{currentUser?.name}</span>
-                </SelectValue>
-              )}
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            {users.map((user) => (
-              <SelectItem key={user.id} value={user.id}>
-                <div className="flex items-center space-x-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={user.avatar} />
-                    <AvatarFallback className="text-xs">
-                      {getInitials(user.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span>{user.name}</span>
-                  {user.role === 'superuser' && (
-                    <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded-full">
-                      Super Admin
-                    </span>
-                  )}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              {getInitials(user?.displayName || '')}
+            </AvatarFallback>
+          </Avatar>
+          {!isCollapsed && (
+            <span className="text-white text-sm font-medium truncate">
+              {user?.displayName || 'User'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Navigation */}

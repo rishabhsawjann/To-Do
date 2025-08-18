@@ -6,6 +6,7 @@ import { generateId } from '@/lib/utils';
 interface UsersState {
   users: User[];
   addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
+  addUserWithId: (id: string, user: Omit<User, 'id' | 'createdAt'>) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
   toggleUserRole: (id: string) => void;
   deleteUser: (id: string) => void;
@@ -17,33 +18,33 @@ const defaultUsers: User[] = [
   {
     id: '1',
     name: 'Fawaz Ahamed',
-    email: 'fawaz.a@example.com',
+    email: 'fawaz@demo.com',
     avatar: '',
     role: 'normal',
     createdAt: '2023-08-16T18:00:00.000Z'
   },
   {
     id: '2',
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    avatar: '',
-    role: 'normal',
-    createdAt: '2023-08-16T18:00:00.000Z'
-  },
-  {
-    id: '3',
-    name: 'Jane Smith',
-    email: 'jane.smith@example.com',
+    name: 'Sarah Wilson',
+    email: 'sarah@demo.com',
     avatar: '',
     role: 'superuser',
     createdAt: '2023-08-16T18:00:00.000Z'
   },
   {
-    id: '4',
-    name: 'Bob Johnson',
-    email: 'bob.johnson@example.com',
+    id: '3',
+    name: 'John Doe',
+    email: 'john@demo.com',
     avatar: '',
     role: 'normal',
+    createdAt: '2023-08-16T18:00:00.000Z'
+  },
+  {
+    id: '4',
+    name: 'Emma Davis',
+    email: 'emma@demo.com',
+    avatar: '',
+    role: 'superuser',
     createdAt: '2023-08-16T18:00:00.000Z'
   }
 ];
@@ -57,6 +58,17 @@ export const useUsersStore = create<UsersState>()(
         const newUser: User = {
           ...userData,
           id: generateId(),
+          createdAt: new Date().toISOString()
+        };
+        set((state) => ({
+          users: [...state.users, newUser]
+        }));
+      },
+      
+      addUserWithId: (id, userData) => {
+        const newUser: User = {
+          ...userData,
+          id: id,
           createdAt: new Date().toISOString()
         };
         set((state) => ({

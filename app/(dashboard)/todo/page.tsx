@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Todo, TodoFilter } from '@/types';
 import { useTodosStore } from '@/stores/todos';
-import { useSessionStore } from '@/stores/session';
+import { useAuthStore } from '@/stores/auth';
 import { formatDateTime, formatTime, getRelativeTime } from '@/lib/time';
 import { TodoForm } from '@/components/TodoForm';
 
@@ -20,10 +20,10 @@ export default function TodoPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   
   const { getFilteredTodos, addTodo, updateTodo, deleteTodo, toggleTodoComplete } = useTodosStore();
-  const { currentUserId } = useSessionStore();
+  const { user } = useAuthStore();
 
-  const todos = getFilteredTodos(currentUserId);
-  const allTodos = useTodosStore.getState().getTodosByUser(currentUserId);
+  const todos = getFilteredTodos(user?.uid || '', filter);
+  const allTodos = useTodosStore.getState().getTodosByUser(user?.uid || '');
   
   // Filter todos based on search query
   const filteredTodos = todos.filter(todo =>
@@ -39,10 +39,12 @@ export default function TodoPage() {
   );
 
   const handleCreateTodo = (todoData: Omit<Todo, 'id' | 'createdAt'>) => {
-    addTodo({
-      ...todoData,
-      userId: currentUserId
-    });
+    if (user?.uid) {
+      addTodo({
+        ...todoData,
+        userId: user.uid
+      });
+    }
   };
 
   const handleEditTodo = (todoData: Omit<Todo, 'id' | 'createdAt'>) => {

@@ -1,34 +1,43 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useProfileStore } from '@/stores/profile';
-import { useUsersStore } from '@/stores/users';
-import { useSessionStore } from '@/stores/session';
+import { useAuthStore } from '@/stores/auth';
+import { useTodosStore } from '@/stores/todos';
 import { getInitials } from '@/lib/utils';
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
-  const [avatar, setAvatar] = useState<string>('');
+  const [avatar, setAvatar] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const { getProfile, updateProfile } = useProfileStore();
-  const { getUserById } = useUsersStore();
-  const { currentUserId } = useSessionStore();
+  const router = useRouter();
   
-  const profile = getProfile();
-  const currentUser = getUserById(currentUserId);
+  const profileStore = useProfileStore();
+  const { user, signOut } = useAuthStore();
+  const { getTodosByUser } = useTodosStore();
 
-  // Initialize form with current profile data
-  useState(() => {
-    setName(profile.name || currentUser?.name || '');
-    setAvatar(profile.avatar || currentUser?.avatar || '');
-  });
+  // Get user's todos for summary
+  const userTodos = getTodosByUser(user?.uid || '');
+  const allTodos = userTodos.length;
+  const upcomingTodos = userTodos.filter(todo => !todo.completed).length;
+  const completedTodos = userTodos.filter(todo => todo.completed).length;
+
+  // Initialize form with current values
+  useEffect(() => {
+    if (user?.displayName) {
+      setName(user.displayName);
+    } else if (profileStore.name) {
+      setName(profileStore.name);
+    }
+    if (profileStore.avatar) setAvatar(profileStore.avatar);
+  }, [user?.displayName, profileStore.name, profileStore.avatar]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -43,18 +52,23 @@ export default function ProfilePage() {
   };
 
   const handleSave = () => {
-    updateProfile({ name, avatar });
+    profileStore.updateProfile({ name, avatar });
     setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setName(profile.name || currentUser?.name || '');
-    setAvatar(profile.avatar || currentUser?.avatar || '');
+    setName(user?.displayName || profileStore.name || '');
+    setAvatar(profileStore.avatar || user?.photoURL || '');
     setIsEditing(false);
   };
 
-  const displayName = profile.name || currentUser?.name || 'Fawaz Ahamed';
-  const displayAvatar = profile.avatar || currentUser?.avatar || '';
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/login');
+  };
+
+  const displayName = user?.displayName || profileStore.name || 'User';
+  const displayAvatar = profileStore.avatar || user?.photoURL || '';
 
   return (
     <div className="space-y-6">
@@ -71,13 +85,13 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle>Profile Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               {/* Avatar Section */}
               <div className="flex items-center space-x-6">
                 <div className="relative">
-                  <Avatar className="h-24 w-24">
+                  <Avatar className="h-20 w-20">
                     <AvatarImage src={displayAvatar} />
-                    <AvatarFallback className="text-2xl">
+                    <AvatarFallback className="text-xl">
                       {getInitials(displayName)}
                     </AvatarFallback>
                   </Avatar>
@@ -96,7 +110,7 @@ export default function ProfilePage() {
                 </div>
                 
                 <div className="flex-1">
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <div>
                       <Label htmlFor="name">Name</Label>
                       {isEditing ? (
@@ -113,18 +127,14 @@ export default function ProfilePage() {
 
                     <div>
                       <Label>Email</Label>
-                      <p className="text-gray-600">{currentUser?.email || 'No email provided'}</p>
+                      <p className="text-gray-600">{user?.email || 'No email provided'}</p>
                     </div>
 
                     <div>
                       <Label>Role</Label>
                       <div className="flex items-center space-x-2 mt-1">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          currentUser?.role === 'superuser' 
-                            ? 'bg-purple-100 text-purple-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {currentUser?.role === 'superuser' ? 'Super Admin' : 'Normal User'}
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          Normal User
                         </span>
                       </div>
                     </div>
@@ -132,8 +142,8 @@ export default function ProfilePage() {
                     <div>
                       <Label>Joined On</Label>
                       <p className="text-gray-600">
-                        {currentUser?.createdAt 
-                          ? new Date(currentUser.createdAt).toLocaleDateString('en-GB', {
+                        {user?.metadata?.creationTime 
+                          ? new Date(user.metadata.creationTime).toLocaleDateString('en-GB', {
                               day: '2-digit',
                               month: '2-digit',
                               year: 'numeric',
@@ -149,7 +159,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-3 pt-4">
+              <div className="flex justify-end space-x-3 pt-2">
                 {isEditing ? (
                   <>
                     <Button variant="outline" onClick={handleCancel}>
@@ -172,31 +182,31 @@ export default function ProfilePage() {
         {/* Summary Cards */}
         <div className="space-y-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle>Summary</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">12</p>
+                <p className="text-2xl font-bold text-gray-900">{allTodos}</p>
                 <p className="text-sm text-gray-500">All Todos</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-yellow-600">4</p>
+                <p className="text-2xl font-bold text-yellow-600">{upcomingTodos}</p>
                 <p className="text-sm text-gray-500">Upcoming</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">6</p>
+                <p className="text-2xl font-bold text-green-600">{completedTodos}</p>
                 <p className="text-sm text-gray-500">Completed</p>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" className="w-full mb-2">
+              <Button variant="outline" className="w-full" onClick={handleLogout}>
                 Logout
               </Button>
             </CardContent>

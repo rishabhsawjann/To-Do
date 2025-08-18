@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTodosStore } from '@/stores/todos';
-import { useSessionStore } from '@/stores/session';
+import { useAuthStore } from '@/stores/auth';
 import { formatDateTime, formatTime } from '@/lib/time';
 import { TodoForm } from '@/components/TodoForm';
 
@@ -16,9 +16,9 @@ export default function CalendarPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   
   const { getTodosByUser, addTodo } = useTodosStore();
-  const { currentUserId } = useSessionStore();
+  const { user } = useAuthStore();
   
-  const todos = getTodosByUser(currentUserId);
+  const todos = getTodosByUser(user?.uid || '');
 
   // Calendar navigation
   const goToPreviousMonth = () => {
@@ -76,9 +76,29 @@ export default function CalendarPage() {
     });
   };
 
+  // Get completed todos for a specific date
+  const getCompletedTodosForDate = (date: Date) => {
+    return getTodosForDate(date).filter(todo => todo.completed);
+  };
+
+  // Get upcoming todos for a specific date
+  const getUpcomingTodosForDate = (date: Date) => {
+    return getTodosForDate(date).filter(todo => !todo.completed);
+  };
+
   // Check if date has todos
   const hasTodos = (date: Date) => {
     return getTodosForDate(date).length > 0;
+  };
+
+  // Check if date has completed todos
+  const hasCompletedTodos = (date: Date) => {
+    return getCompletedTodosForDate(date).length > 0;
+  };
+
+  // Check if date has upcoming todos
+  const hasUpcomingTodos = (date: Date) => {
+    return getUpcomingTodosForDate(date).length > 0;
   };
 
   // Check if date is today
@@ -105,13 +125,15 @@ export default function CalendarPage() {
     if (selectedDate) {
       addTodo({
         ...todoData,
-        userId: currentUserId,
+        userId: user?.uid || '',
         scheduledAt: selectedDate.toISOString()
       });
     }
   };
 
   const selectedDateTodos = selectedDate ? getTodosForDate(selectedDate) : [];
+  const selectedDateCompletedTodos = selectedDate ? getCompletedTodosForDate(selectedDate) : [];
+  const selectedDateUpcomingTodos = selectedDate ? getUpcomingTodosForDate(selectedDate) : [];
 
   return (
     <div className="space-y-6">
@@ -150,6 +172,25 @@ export default function CalendarPage() {
               </div>
             </CardHeader>
             <CardContent>
+              {/* Calendar Legend */}
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div className="text-sm font-medium text-gray-700 mb-2">Calendar Legend</div>
+                <div className="flex items-center space-x-4 text-xs">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-green-700">Completed todos</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <span className="text-yellow-700">Upcoming todos</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-blue-700">Today</span>
+                  </div>
+                </div>
+              </div>
+              
               {/* Calendar Grid */}
               <div className="grid grid-cols-7 gap-1">
                 {/* Day headers */}
@@ -162,7 +203,11 @@ export default function CalendarPage() {
                 {/* Calendar days */}
                 {calendarDays.map(({ date, isCurrentMonth }, index) => {
                   const dayTodos = getTodosForDate(date);
+                  const completedTodos = getCompletedTodosForDate(date);
+                  const upcomingTodos = getUpcomingTodosForDate(date);
                   const hasTodosOnDay = hasTodos(date);
+                  const hasCompletedOnDay = hasCompletedTodos(date);
+                  const hasUpcomingOnDay = hasUpcomingTodos(date);
                   const isTodayDate = isToday(date);
                   const isSelectedDate = isSelected(date);
                   
@@ -186,23 +231,45 @@ export default function CalendarPage() {
                       {/* Todo indicators */}
                       {hasTodosOnDay && (
                         <div className="space-y-1">
-                          {dayTodos.slice(0, 2).map(todo => (
+                          {/* Completed todos indicator */}
+                          {hasCompletedOnDay && (
+                            <div className="flex items-center space-x-1">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span className="text-xs text-green-700 font-medium">
+                                {completedTodos.length} completed
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Upcoming todos indicator */}
+                          {hasUpcomingOnDay && (
+                            <div className="flex items-center space-x-1">
+                              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                              <span className="text-xs text-yellow-700 font-medium">
+                                {upcomingTodos.length} upcoming
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Show first todo title if space allows */}
+                          {dayTodos.length === 1 && (
                             <div
-                              key={todo.id}
                               className={`
-                                text-xs p-1 rounded truncate
-                                ${todo.completed 
+                                text-xs p-1 rounded truncate mt-1
+                                ${dayTodos[0].completed 
                                   ? 'bg-green-100 text-green-700' 
                                   : 'bg-yellow-100 text-yellow-700'
                                 }
                               `}
                             >
-                              {todo.title}
+                              {dayTodos[0].title}
                             </div>
-                          ))}
-                          {dayTodos.length > 2 && (
-                            <div className="text-xs text-gray-500 text-center">
-                              +{dayTodos.length - 2} more
+                          )}
+                          
+                          {/* Show count if multiple todos */}
+                          {dayTodos.length > 1 && (
+                            <div className="text-xs text-gray-500 text-center mt-1">
+                              {dayTodos.length} todos
                             </div>
                           )}
                         </div>
@@ -236,10 +303,21 @@ export default function CalendarPage() {
             </CardHeader>
             <CardContent>
               {selectedDate ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Todos</span>
-                    <Badge variant="secondary">{selectedDateTodos.length}</Badge>
+                <div className="space-y-4">
+                  {/* Summary */}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-gray-50 p-2 rounded">
+                      <div className="text-lg font-bold text-gray-900">{selectedDateTodos.length}</div>
+                      <div className="text-xs text-gray-600">Total</div>
+                    </div>
+                    <div className="bg-green-50 p-2 rounded">
+                      <div className="text-lg font-bold text-green-600">{selectedDateCompletedTodos.length}</div>
+                      <div className="text-xs text-green-600">Completed</div>
+                    </div>
+                    <div className="bg-yellow-50 p-2 rounded">
+                      <div className="text-lg font-bold text-yellow-600">{selectedDateUpcomingTodos.length}</div>
+                      <div className="text-xs text-yellow-600">Upcoming</div>
+                    </div>
                   </div>
                   
                   {selectedDateTodos.length === 0 ? (
@@ -247,40 +325,62 @@ export default function CalendarPage() {
                       No todos scheduled for this date
                     </p>
                   ) : (
-                    <div className="space-y-2">
-                      {selectedDateTodos.map(todo => (
-                        <div
-                          key={todo.id}
-                          className={`
-                            p-3 rounded-lg border
-                            ${todo.completed 
-                              ? 'bg-green-50 border-green-200' 
-                              : 'bg-white border-gray-200'
-                            }
-                          `}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className={`text-sm font-medium ${
-                                todo.completed ? 'text-green-800 line-through' : 'text-gray-900'
-                              }`}>
-                                {todo.title}
-                              </h4>
-                              {todo.description && (
-                                <p className="text-xs text-gray-600 mt-1">{todo.description}</p>
-                              )}
-                              <div className="flex items-center space-x-2 mt-2">
-                                <Badge 
-                                  variant={todo.completed ? 'default' : 'outline'}
-                                  className={todo.completed ? 'bg-green-100 text-green-800' : ''}
-                                >
-                                  {todo.completed ? 'Completed' : formatTime(todo.scheduledAt)}
-                                </Badge>
+                    <div className="space-y-4">
+                      {/* Upcoming Todos */}
+                      {selectedDateUpcomingTodos.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-medium text-yellow-700 mb-2 flex items-center">
+                            <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
+                            Upcoming ({selectedDateUpcomingTodos.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {selectedDateUpcomingTodos.map(todo => (
+                              <div
+                                key={todo.id}
+                                className="p-3 rounded-lg border bg-white border-yellow-200"
+                              >
+                                <h5 className="text-sm font-medium text-gray-900">{todo.title}</h5>
+                                {todo.description && (
+                                  <p className="text-xs text-gray-600 mt-1">{todo.description}</p>
+                                )}
+                                <div className="flex items-center space-x-2 mt-2">
+                                  <Badge variant="outline" className="text-yellow-700 border-yellow-500">
+                                    {formatTime(todo.scheduledAt)}
+                                  </Badge>
+                                </div>
                               </div>
-                            </div>
+                            ))}
                           </div>
                         </div>
-                      ))}
+                      )}
+                      
+                      {/* Completed Todos */}
+                      {selectedDateCompletedTodos.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-medium text-green-700 mb-2 flex items-center">
+                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                            Completed ({selectedDateCompletedTodos.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {selectedDateCompletedTodos.map(todo => (
+                              <div
+                                key={todo.id}
+                                className="p-3 rounded-lg border bg-green-50 border-green-200"
+                              >
+                                <h5 className="text-sm font-medium text-green-800 line-through">{todo.title}</h5>
+                                {todo.description && (
+                                  <p className="text-xs text-green-600 mt-1">{todo.description}</p>
+                                )}
+                                <div className="flex items-center space-x-2 mt-2">
+                                  <Badge className="bg-green-100 text-green-800">
+                                    Completed
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   

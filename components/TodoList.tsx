@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Todo, TodoFilter } from '@/types';
 import { useTodosStore } from '@/stores/todos';
-import { useSessionStore } from '@/stores/session';
+import { useAuthStore } from '@/stores/auth';
 import { formatDateTime } from '@/lib/time';
 import { TodoForm } from './TodoForm';
 
@@ -20,17 +20,17 @@ export function TodoList({ filter, onFilterChange }: TodoListProps) {
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { getFilteredTodos, addTodo, updateTodo, deleteTodo, toggleTodoComplete } = useTodosStore();
-  const { currentUserId } = useSessionStore();
+  const { user } = useAuthStore();
 
-  const todos = getFilteredTodos(currentUserId, filter);
-  const allTodos = useTodosStore.getState().getTodosByUser(currentUserId);
+  const todos = getFilteredTodos(user?.uid || '', filter);
+  const allTodos = useTodosStore.getState().getTodosByUser(user?.uid || '');
   const upcomingTodos = allTodos.filter(todo => !todo.completed);
   const completedTodos = allTodos.filter(todo => todo.completed);
 
   const handleCreateTodo = (todoData: Omit<Todo, 'id' | 'createdAt'>) => {
     addTodo({
       ...todoData,
-      userId: currentUserId
+      userId: user?.uid || ''
     });
   };
 
@@ -74,7 +74,7 @@ export function TodoList({ filter, onFilterChange }: TodoListProps) {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">All Todos</h1>
           <p className="text-sm text-gray-500">
-            Last Updated: {new Date().toLocaleString('en-GB')}
+            Manage your tasks and stay organized
           </p>
         </div>
         

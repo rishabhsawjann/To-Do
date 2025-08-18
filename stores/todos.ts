@@ -15,6 +15,7 @@ interface TodosState {
   getFilteredTodos: (userId: string, filterType?: TodoFilter) => Todo[];
   seedTodos: () => void;
   resetTodos: () => void;
+  createSampleTodosForUser: (userId: string) => void;
 }
 
 const defaultTodos: Todo[] = [
@@ -307,6 +308,181 @@ export const useTodosStore = create<TodosState>()(
       
       resetTodos: () => {
         set({ todos: defaultTodos });
+      },
+
+      createSampleTodosForUser: (userId) => {
+        const state = get();
+        const userTodos = state.todos.filter(todo => todo.userId === userId);
+        
+        // Only create sample todos if user doesn't have any
+        if (userTodos.length === 0) {
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          
+          const sampleTodos: Omit<Todo, 'id' | 'createdAt'>[] = [
+            // Today's todos (urgent)
+            {
+              userId: userId,
+              title: 'Team stand-up meeting',
+              description: 'Daily stand-up with development team to discuss progress, blockers, and plan for the day.',
+              scheduledAt: new Date(today.getTime() + 9 * 60 * 60 * 1000).toISOString(), // 9:00 AM today
+              completed: false
+            },
+            {
+              userId: userId,
+              title: 'Code review for PR #245',
+              description: 'Review the new authentication module implementation and provide feedback on code quality and security.',
+              scheduledAt: new Date(today.getTime() + 11 * 60 * 60 * 1000).toISOString(), // 11:00 AM today
+              completed: false
+            },
+            {
+              userId: userId,
+              title: 'Client presentation preparation',
+              description: 'Prepare slides and demo for the quarterly client review meeting covering project milestones and next phase planning.',
+              scheduledAt: new Date(today.getTime() + 14 * 60 * 60 * 1000).toISOString(), // 2:00 PM today
+              completed: false
+            },
+            {
+              userId: userId,
+              title: 'Database backup verification',
+              description: 'Verify that the automated database backup completed successfully and check backup integrity.',
+              scheduledAt: new Date(today.getTime() + 16 * 60 * 60 * 1000).toISOString(), // 4:00 PM today
+              completed: false
+            },
+            
+            // Tomorrow's todos
+            {
+              userId: userId,
+              title: 'Project documentation update',
+              description: 'Update project documentation with latest API changes and user flow diagrams.',
+              scheduledAt: new Date(today.getTime() + 24 * 60 * 60 * 1000 + 10 * 60 * 60 * 1000).toISOString(), // 10:00 AM tomorrow
+              completed: false
+            },
+            {
+              userId: userId,
+              title: 'Sprint planning meeting',
+              description: 'Plan next sprint goals, assign tasks, and estimate story points with the team.',
+              scheduledAt: new Date(today.getTime() + 24 * 60 * 60 * 1000 + 13 * 60 * 60 * 1000).toISOString(), // 1:00 PM tomorrow
+              completed: false
+            },
+            {
+              userId: userId,
+              title: 'Performance testing',
+              description: 'Run load tests on the new authentication system to ensure it handles expected traffic.',
+              scheduledAt: new Date(today.getTime() + 24 * 60 * 60 * 1000 + 15 * 60 * 60 * 1000).toISOString(), // 3:00 PM tomorrow
+              completed: false
+            },
+            
+            // This week's todos
+            {
+              userId: userId,
+              title: 'Security audit review',
+              description: 'Review security audit findings and create action plan for addressing vulnerabilities.',
+              scheduledAt: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000).toISOString(), // 2:00 PM in 3 days
+              completed: false
+            },
+            {
+              userId: userId,
+              title: 'API documentation finalization',
+              description: 'Finalize API documentation for the new endpoints and publish to developer portal.',
+              scheduledAt: new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000 + 11 * 60 * 60 * 1000).toISOString(), // 11:00 AM in 4 days
+              completed: false
+            },
+            {
+              userId: userId,
+              title: 'Team retrospective',
+              description: 'Facilitate team retrospective to discuss what went well and areas for improvement.',
+              scheduledAt: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000 + 16 * 60 * 60 * 1000).toISOString(), // 4:00 PM in 5 days
+              completed: false
+            },
+            
+            // Next week's todos
+            {
+              userId: userId,
+              title: 'Quarterly planning workshop',
+              description: 'Participate in quarterly planning workshop to align on Q1 2025 objectives and key results.',
+              scheduledAt: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000).toISOString(), // 9:00 AM next week
+              completed: false
+            },
+            {
+              userId: userId,
+              title: 'Technical architecture review',
+              description: 'Present technical architecture decisions to stakeholders and gather feedback.',
+              scheduledAt: new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000).toISOString(), // 2:00 PM next week
+              completed: false
+            },
+            
+            // Completed todos (recent)
+            {
+              userId: userId,
+              title: 'Morning stand-up',
+              description: 'Attend daily morning stand-up meeting with the development team.',
+              scheduledAt: new Date(today.getTime() + 8 * 60 * 60 * 1000).toISOString(), // 8:00 AM today
+              completed: true,
+              completedAt: new Date(today.getTime() + 8 * 30 * 60 * 1000).toISOString() // 8:30 AM today
+            },
+            {
+              userId: userId,
+              title: 'Email inbox cleanup',
+              description: 'Organize and respond to important emails from the past week.',
+              scheduledAt: new Date(today.getTime() + 7 * 60 * 60 * 1000).toISOString(), // 7:00 AM today
+              completed: true,
+              completedAt: new Date(today.getTime() + 7 * 45 * 60 * 1000).toISOString() // 7:45 AM today
+            },
+            {
+              userId: userId,
+              title: 'Yesterday\'s bug fixes',
+              description: 'Complete the remaining bug fixes from yesterday\'s development session.',
+              scheduledAt: new Date(today.getTime() - 24 * 60 * 60 * 1000 + 16 * 60 * 60 * 1000).toISOString(), // 4:00 PM yesterday
+              completed: true,
+              completedAt: new Date(today.getTime() - 24 * 60 * 60 * 1000 + 17 * 30 * 60 * 1000).toISOString() // 5:30 PM yesterday
+            },
+            {
+              userId: userId,
+              title: 'Weekly progress report',
+              description: 'Compile weekly progress report for stakeholders including completed tasks and next week\'s priorities.',
+              scheduledAt: new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000 + 17 * 60 * 60 * 1000).toISOString(), // 5:00 PM 2 days ago
+              completed: true,
+              completedAt: new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000 + 18 * 30 * 60 * 1000).toISOString() // 6:30 PM 2 days ago
+            },
+            {
+              userId: userId,
+              title: 'Code deployment',
+              description: 'Deploy the latest bug fixes and feature updates to the staging environment.',
+              scheduledAt: new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000 + 15 * 60 * 60 * 1000).toISOString(), // 3:00 PM 3 days ago
+              completed: true,
+              completedAt: new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000 + 16 * 30 * 60 * 1000).toISOString() // 4:30 PM 3 days ago
+            },
+            {
+              userId: userId,
+              title: 'Unit test writing',
+              description: 'Write comprehensive unit tests for the new user authentication module.',
+              scheduledAt: new Date(today.getTime() - 4 * 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000).toISOString(), // 2:00 PM 4 days ago
+              completed: true,
+              completedAt: new Date(today.getTime() - 4 * 24 * 60 * 60 * 1000 + 16 * 60 * 60 * 1000).toISOString() // 4:00 PM 4 days ago
+            },
+            {
+              userId: userId,
+              title: 'Peer code review',
+              description: 'Review colleague\'s pull request for the payment integration feature.',
+              scheduledAt: new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000 + 11 * 60 * 60 * 1000).toISOString(), // 11:00 AM 5 days ago
+              completed: true,
+              completedAt: new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000 + 12 * 30 * 60 * 1000).toISOString() // 12:30 PM 5 days ago
+            }
+          ];
+          
+          // Add sample todos
+          sampleTodos.forEach(todo => {
+            const newTodo: Todo = {
+              ...todo,
+              id: generateId(),
+              createdAt: new Date().toISOString()
+            };
+            set((state) => ({
+              todos: [...state.todos, newTodo]
+            }));
+          });
+        }
       }
     }),
     {
