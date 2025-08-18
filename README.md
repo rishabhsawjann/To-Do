@@ -226,5 +226,5 @@ For questions or issues:
 
 ---
 
-**Built with ❤️ using Next.js 14, Tailwind CSS, and Firebase**
+**Built with using Next.js 14, Tailwind CSS, and Firebase**
 
